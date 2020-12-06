@@ -34,9 +34,12 @@ import api
 import random
 import game
 import util
-
-last_iterate = [[]]
+import math
+last_ghost_pos = []
+last_direction = Directions.STOP
 class MDPAgent(Agent):
+
+
     # Constructor: this gets run when we first invoke pacman.py
     def __init__(self):
         print "Starting up MDPAgent!"
@@ -50,20 +53,28 @@ class MDPAgent(Agent):
         
 
     def createMapMatrix(self, state):
+        global last_ghost_pos
         width,height = api.corners(state)[3][0]+1,api.corners(state)[3][1]+1
         mapMatrix = [[0 for x in range(height)] for y in range(width)] 
         ghost_pos = api.ghosts(state)
+        if len(last_ghost_pos)!=0:
+            for i in last_ghost_pos:
+                mapMatrix[int(i[0])][int(i[1])] = 4
+                #print "last" + str(last_ghost_pos)
+        last_ghost_pos = ghost_pos
+        #print "current" + str(ghost_pos)
+
 
         for i in api.food(state):
             mapMatrix[i[0]][i[1]]= 5
+            #mapMatrix[3][3] = 4
         for i in api.capsules(state):
             mapMatrix[i[0]][i[1]] = 5
         for i in api.ghostStatesWithTimes(state):
-
             mapMatrix[int(i[0][0])][int(i[0][1])] = -10
-
         for i in api.walls(state):
             mapMatrix[i[0]][i[1]] = None
+
         return mapMatrix
 
 
@@ -80,7 +91,7 @@ class MDPAgent(Agent):
             old_value = mapMatrix
             for i in range(corners[3][0]):
                 for j in range(corners[3][1]):
-                    if old_value[i][j] != None and old_value[i][j]!=-10 and old_value[i][j]!=5:
+                    if old_value[i][j] != None and old_value[i][j]!=-10 and old_value[i][j]!=5 and old_value[i][j]!=4:
                         if old_value[i][j+1]!=None:
                             up = old_value[i][j+1]
                         else:
@@ -104,8 +115,6 @@ class MDPAgent(Agent):
 
 
 
-    
-
     def policy_selection(self, state):
 
         new_map = self.createMapMatrix(state)
@@ -124,17 +133,17 @@ class MDPAgent(Agent):
         if max(left,right,up,down)==right:
             return Directions.EAST
         
-
-
+        
 
 
     def getAction(self, state):
+        global last_direction
         direction = self.policy_selection(state)
         legal = api.legalActions(state)
-
         if Directions.STOP in legal:
             legal.remove(Directions.STOP)
         actual_selected_direction = api.makeMove(direction, legal)
+        last_direction = actual_selected_direction
         return actual_selected_direction
 
 
